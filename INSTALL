@@ -3,10 +3,3 @@ mvn install:install-file -DgroupId=net.sf.trove4j -DartifactId=trove4j -Dversion
 mvn install:install-file -DgroupId=org.garret.perst -DartifactId=perst -Dversion=421 -Dpackaging=jar -Dfile=lib/perst-421.jar
 mvn install:install-file -DgroupId=org.openstreetmaps.osmosis -DartifactId=osmosis -Dversion=0.35.1 -Dpackaging=jar -Dfile=lib/osmosis-0.35.1.jar
 
-rm -rf /Volumes/Marula/Users/biafra/mapsforge-read-only/mapsforge/src/org/mapsforge/preprocessing
-rm -rf /Volumes/Marula/Users/biafra/mapsforge-read-only/mapsforge/src/org/mapsforge/poi
-rm -rf /Volumes/Marula/Users/biafra/mapsforge-read-only/mapsforge/src/org/mapsforge/directions
-rm -rf /Volumes/Marula/Users/biafra/mapsforge-read-only/mapsforge/src/org/mapsforge/server
-rm -rf /Volumes/Marula/Users/biafra/mapsforge-read-only/mapsforge/src/org/mapsforge/core
-rm -rf /Volumes/Marula/Users/biafra/mapsforge-read-only/mapsforge/src/org/mapsforge/android/routing
-
