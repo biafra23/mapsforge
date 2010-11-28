@@ -1,0 +1,12 @@
+Version 0.2.0 (2010-11-22)
+--------------------------
++ New binary map format for more detailed and faster map rendering.
++ Overlay API to display points, ways and polygons on top of the map.
++ Better label and symbol placement with collision avoidance.
++ The MapView now supports multi-touch and new tile download modes.
++ First release of the Osmosis plugin to generate binary map files.
++ Many other minor improvements and bugfixes.
+
+Version 0.1.0 (2010-06-27)
+--------------------------
+First public release, contains the android.map package.

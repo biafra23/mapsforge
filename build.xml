@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Use this Ant script for convenience with creating a distribution of mapsforge.
+The script in not intended for building the project. Use Eclipse for this
+purpose.
+-->
+<project name="mapsforge">
+	<property name="mapsforge.version" value="0.2.0" />
+
+	<property name="mapsforge.bin" value="bin" />
+	<property name="mapsforge.lib" value="lib" />
+	<property name="mapsforge.src" value="src" />
+	<property name="mapsforge.dist" value="dist" />
+	<property name="mapsforge.doc" value="doc" />
+
+	<property name="mapsforge.advancemapviewer.lib.dir"
+	          value="${basedir}/../AdvancedMapViewer/lib" />
+	<property name="mapsforge.samples.lib.dir" value="${basedir}/../Samples/lib" />
+	<property name="mapsforge.routingservlet.lib.dir"
+	          value="${basedir}/../HHRoutingWebservice/WebContent/WEB-INF/lib" />
+
+	<!-- Path to the properties file that includes the keystore parameters -->
+	<property file="../mapsforge-keystore.properties" />
+
+	<!-- List of files to be included in every distribution (JAR file) -->
+	<fileset dir="." id="info" includes="COPYING, NEWS" />
+
+	<!-- List of all JAR files in the library folder -->
+	<path id="classpath">
+		<fileset dir="${mapsforge.lib}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+
+	<!-- Check if the keystore exists -->
+	<target name="check-for-keystore">
+		<available file="${mapsforge.keystore.location}"
+		           type="file"
+		           property="keystore.present" />
+	</target>
+
+
+	<!-- Delete temporary folders -->
+	<target name="clean">
+		<delete dir="${mapsforge.doc}" />
+		<delete dir="${mapsforge.dist}" />
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.dist}" />
+		</antcall>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.doc}" />
+		</antcall>
+	</target>
+
+
+	<!-- Refresh the given ressource if Ant runs in the same JRE as the workspace -->
+	<target name="eclipse-refresh" if="eclipse.running">
+		<eclipse.refreshLocal resource="${ressource}" depth="infinite" />
+	</target>
+
+
+	<!-- ################## mapsforge-map-jar ################## -->
+
+
+	<!-- Create the JAR file -->
+	<target name="mapsforge-map-jar-create">
+		<mkdir dir="${mapsforge.dist}" />
+		<!-- Include source code and generated class files, avoid duplicates -->
+		<jar destfile="${mapsforge.dist}/mapsforge-map-${mapsforge.version}.jar"
+		     duplicate="preserve">
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/android/maps/" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/android/maps/" />
+			<fileset refid="info" />
+		</jar>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.dist}" />
+		</antcall>
+	</target>
+
+
+	<!-- Sign and verify the JAR file if the keystore exists -->
+	<target name="mapsforge-map-jar-sign"
+	        depends="check-for-keystore,mapsforge-map-jar-create"
+	        if="keystore.present">
+		<signjar jar="${mapsforge.dist}/mapsforge-map-${mapsforge.version}.jar"
+		         keystore="${mapsforge.keystore.location}"
+		         storepass="${mapsforge.keystore.pass}"
+		         alias="${mapsforge.keystore.alias}"
+		         keypass="${mapsforge.key.pass}" />
+		<!-- Verify the signed JAR file and stop if verification was not successful -->
+		<exec executable="jarsigner" failonerror="true">
+			<arg value="-verify" />
+			<arg value="${mapsforge.dist}/mapsforge-map-${mapsforge.version}.jar" />
+		</exec>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.dist}" />
+		</antcall>
+	</target>
+
+
+	<!-- Copy the created JAR file to the other projects -->
+	<target name="mapsforge-map-jar-copy" depends="mapsforge-map-jar-sign">
+		<copy overwrite="true"
+		      file="${mapsforge.dist}/mapsforge-map-${mapsforge.version}.jar"
+		      todir="${mapsforge.advancemapviewer.lib.dir}" />
+		<copy overwrite="true"
+		      file="${mapsforge.dist}/mapsforge-map-${mapsforge.version}.jar"
+		      todir="${mapsforge.samples.lib.dir}" />
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="AdvancedMapViewer/lib" />
+		</antcall>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="Samples/lib" />
+		</antcall>
+	</target>
+
+
+	<!-- ################## mapsforge-map-javadoc ################## -->
+
+
+	<!-- Create the Javadoc files -->
+	<target name="mapsforge-map-javadoc-create">
+		<mkdir dir="${mapsforge.doc}/${mapsforge.version}" />
+		<javadoc destdir="${mapsforge.doc}/${mapsforge.version}"
+		         author="false"
+		         access="protected"
+		         additionalparam="-quiet"
+		         classpathref="classpath">
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/android/maps/*.java" />
+			<!-- Add links to the online Android javadoc reference -->
+			<link href="http://developer.android.com/reference"
+			      offline="true"
+			      packagelistloc="${basedir}/../../Android/android-sdk-linux_x86/docs/reference" />
+		</javadoc>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.doc}" />
+		</antcall>
+	</target>
+
+
+	<!-- ################## mapsforge-mapfile-writer-jar ################## -->
+
+
+	<!-- Create the JAR file -->
+	<target name="mapsforge-mapfile-writer-jar-create">
+		<mkdir dir="${mapsforge.dist}" />
+		<!-- Include source code and generated class files, avoid duplicates -->
+		<jar destfile="${mapsforge.dist}/mapsforge-mapfile-writer-${mapsforge.version}.jar"
+		     duplicate="preserve">
+			<fileset dir="${mapsforge.src}"
+			         includes="org/mapsforge/preprocessing/map/osmosis/"
+			         excludes="org/mapsforge/preprocessing/map/osmosis/*.xml" />
+			<fileset dir="${mapsforge.bin}"
+			         includes="org/mapsforge/preprocessing/map/osmosis/"
+			         excludes="org/mapsforge/preprocessing/map/osmosis/*.xml" />
+			<fileset dir="${mapsforge.src}"
+			         includes="org/mapsforge/core/Rect.java,
+						org/mapsforge/core/GeoCoordinate.java,
+						org/mapsforge/core/MercatorProjection.java,
+						org/mapsforge/core/WGS84.java" />
+			<fileset dir="${mapsforge.bin}"
+			         includes="org/mapsforge/core/Rect.class,
+						org/mapsforge/core/GeoCoordinate.class,
+						org/mapsforge/core/MercatorProjection.class,
+						org/mapsforge/core/WGS84.class" />
+			<fileset dir="${mapsforge.src}/org/mapsforge/preprocessing/map/osmosis/"
+			         includes="*.xml" />
+			<fileset refid="info" />
+		</jar>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.dist}" />
+		</antcall>
+	</target>
+
+
+	<!-- Sign and verify the JAR file if the keystore exists -->
+	<target name="mapsforge-mapfile-writer-jar-sign"
+	        depends="check-for-keystore,mapsforge-mapfile-writer-jar-create"
+	        if="keystore.present">
+		<signjar jar="${mapsforge.dist}/mapsforge-mapfile-writer-${mapsforge.version}.jar"
+		         keystore="${mapsforge.keystore.location}"
+		         storepass="${mapsforge.keystore.pass}"
+		         alias="${mapsforge.keystore.alias}"
+		         keypass="${mapsforge.key.pass}" />
+		<!-- Verify the signed JAR file and stop if verification was not successful -->
+		<exec executable="jarsigner" failonerror="true">
+			<arg value="-verify" />
+			<arg value="${mapsforge.dist}/mapsforge-mapfile-writer-${mapsforge.version}.jar" />
+		</exec>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.dist}" />
+		</antcall>
+	</target>
+
+
+	<!-- Copy the created JAR file to the plugins directory -->
+	<target name="mapsforge-mapfile-writer-jar-copy"
+	        depends="mapsforge-mapfile-writer-jar-sign">
+		<copy overwrite="true"
+		      file="${mapsforge.dist}/mapsforge-mapfile-writer-${mapsforge.version}.jar"
+		      todir="${user.home}/.openstreetmap/osmosis/plugins" />
+	</target>
+
+
+	<!-- ################## mapsforge-routing.jar ################## -->
+
+
+	<!-- Create the JAR file -->
+	<target name="mapsforge-routing.jar-create">
+		<mkdir dir="${mapsforge.dist}" />
+		<!-- Include source code and generated class files, avoid duplicates -->
+		<jar destfile="${mapsforge.dist}/mapsforge-routing-${mapsforge.version}.jar"
+		     duplicate="preserve">
+			<fileset dir="${mapsforge.bin}"
+			         includes="org/mapsforge/preprocessing/graph/osm2rg/" />
+			<fileset dir="${mapsforge.src}"
+			         includes="org/mapsforge/preprocessing/graph/osm2rg/" />
+			<fileset dir="${mapsforge.bin}"
+			         includes="org/mapsforge/preprocessing/graph/routingGraphInterface/" />
+			<fileset dir="${mapsforge.src}"
+			         includes="org/mapsforge/preprocessing/graph/routingGraphInterface/" />
+			<fileset dir="${mapsforge.bin}"
+			         includes="org/mapsforge/preprocessing/routing/highwayHierarchies/" />
+			<fileset dir="${mapsforge.src}"
+			         includes="org/mapsforge/preprocessing/routing/highwayHierarchies/" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/server/routing/IEdge.*" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/server/routing/IEdge.*" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/server/routing/IVertex.*" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/server/routing/IVertex.*" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/server/routing/IRouter.*" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/server/routing/IRouter.*" />
+			<fileset dir="${mapsforge.bin}"
+			         includes="org/mapsforge/server/routing/highwayHierarchies/" />
+			<fileset dir="${mapsforge.src}"
+			         includes="org/mapsforge/server/routing/highwayHierarchies/" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/core/DBConnection.*" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/core/DBConnection.*" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/core/GeoCoordinate.*" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/core/GeoCoordinate.*" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/core/Rect.*" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/core/Rect.*" />
+			<fileset refid="info" />
+			<manifest>
+				<attribute name="Main-Class"
+				           value="org/mapsforge/preprocessing/graph/osm2rg/RgExtractor" />
+			</manifest>
+		</jar>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.dist}" />
+		</antcall>
+	</target>
+
+
+	<!-- Copy the created JAR file to the servlet directory -->
+	<target name="mapsforge-routing.jar-copy" depends="mapsforge-routing.jar-create">
+		<copy overwrite="true"
+		      file="${mapsforge.dist}/mapsforge-routing-${mapsforge.version}.jar"
+		      todir="${mapsforge.routingservlet.lib.dir}" />
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="HHRoutingWebservice" />
+		</antcall>
+	</target>
+
+
+	<target name="mapsforge-build-highway-highrarchies-routing-file">
+		<java fork="true" classname="org.mapsforge.preprocessing.graph.osm2rg.RgExtractor">
+			<arg value="${basedir}/res/conf/osm2rg.properties" />
+			<classpath>
+				<pathelement location="${mapsforge.bin}" />
+				<pathelement location="${mapsforge.lib}/postgresql-8.4-701.jdbc4.jar" />
+				<pathelement location="${mapsforge.lib}/trove-3.0.0a3.jar" />
+			</classpath>
+		</java>
+		<java fork="true"
+		      classname="org.mapsforge.preprocessing.routing.highwayHierarchies.HHComputation">
+			<arg value="${basedir}/res/conf/hhPreprocessing.properties" />
+			<classpath>
+				<pathelement location="${mapsforge.bin}" />
+				<pathelement location="${mapsforge.lib}/postgresql-8.4-701.jdbc4.jar" />
+				<pathelement location="${mapsforge.lib}/trove-3.0.0a3.jar" />
+			</classpath>
+		</java>
+	</target>
+
+
+	<!-- ################## mapsforge-poi-osmosis.jar ################## -->
+
+
+	<target name="mapsforge-poi-osmosis.jar-create">
+		<mkdir dir="${mapsforge.dist}" />
+		<!-- Include source code and generated class files, avoid duplicates -->
+		<jar destfile="${mapsforge.dist}/mapsforge-poi-osmosis-${mapsforge.version}.jar"
+		     duplicate="preserve">
+			<fileset dir="${mapsforge.src}"
+			         includes="org/mapsforge/preprocessing/osmosis/poi/" />
+			<fileset dir="${mapsforge.bin}"
+			         includes="org/mapsforge/preprocessing/osmosis/poi/" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/poi/" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/poi/" />
+			<fileset dir="${mapsforge.src}" includes="org/mapsforge/core/" />
+			<fileset dir="${mapsforge.bin}" includes="org/mapsforge/core/" />
+			<fileset refid="info" />
+		</jar>
+		<antcall target="eclipse-refresh">
+			<param name="ressource" value="mapsforge/${mapsforge.dist}" />
+		</antcall>
+	</target>
+</project>

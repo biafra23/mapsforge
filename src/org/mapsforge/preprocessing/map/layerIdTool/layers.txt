@@ -1,0 +1,141 @@
+// this is a sorted list of tags in the order they should be rendered
+// to generate java code with layer IDs run the layerIdTool on this file
+
+// Man-made areas
+landuse=military
+military=airfield military=barracks military=naval_base
+
+// Landuse
+landuse=residential
+landuse=retail
+landuse=brownfield landuse=industrial
+landuse=commercial
+landuse=construction landuse=greenfield
+
+// Artificial landuse
+amenity=college amenity=fountain amenity=hospital amenity=school amenity=university
+
+// Landuse
+landuse=cemetery
+amenity=grave_yard
+
+// special entry for rendered sea areas
+SEA_AREAS
+
+// Natural features
+natural=coastline
+natural=land
+natural=beach
+landuse=forest landuse=wood natural=wood natural=scrub
+natural=heath
+
+// Artificial landuse
+landuse=allotments landuse=farm landuse=farmland landuse=grass landuse=recreation_ground landuse=village_green
+leisure=common leisure=garden leisure=golf_course leisure=park
+leisure=pitch leisure=playground
+leisure=sports_centre leisure=stadium leisure=water_park
+leisure=track
+
+// Airports and runways
+aeroway=aerodrome
+aeroway=apron
+
+// Man-made areas
+sport=tennis
+sport=shooting
+amenity=parking
+tourism=attraction
+tourism=zoo
+
+// Airfields and airports
+aeroway=runway1
+aeroway=taxiway1
+
+aeroway=runway2
+aeroway=taxiway2
+
+// Waterways
+waterway=river
+waterway=stream
+waterway=canal
+waterway=drain
+natural=water
+landuse=reservoir
+landuse=basin
+waterway=riverbank
+
+boundary=national_park
+
+highway=footway_area=yes
+highway=pedestrian_area=yes
+highway=service_area=yes
+
+// Buildings
+aeroway=terminal
+building=apartments building=embassy building=government building=gym building=roof building=sports building=train_station building=university building=yes
+
+// marine features
+man_made=pier
+
+// Non-physical routes
+route=ferry
+
+// Barriers
+barrier=fence barrier=wall
+
+highway_tunnel=yes
+
+highway=construction
+
+highway=steps1
+highway=footway1
+highway=pedestrian1
+highway=cycleway1
+highway=path1
+highway=bridleway1
+highway=track1
+highway=service1
+highway=unclassified1
+highway=residential1
+highway=living_street1
+highway=road1
+highway=tertiary1
+highway=secondary1
+highway=primary_link1
+highway=trunk_link1
+highway=motorway_link1
+highway=primary1
+highway=trunk1
+highway=motorway1
+
+highway=steps2
+highway=footway2
+highway=pedestrian2
+highway=cycleway2
+highway=path2
+highway=bridleway2
+highway=track2
+highway=service2
+highway=unclassified2
+highway=residential2
+highway=living_street2
+highway=road2
+highway=tertiary2
+highway=secondary2
+highway=primary_link2
+highway=trunk_link2
+highway=motorway_link2
+highway=primary2
+highway=trunk2
+highway=motorway2
+
+railway=light_rail railway=rail railway=rail_tunnel=yes railway=subway railway=subway_tunnel railway=station railway=tram
+
+// Non-physical boundaries
+admin_level=2 admin_level=4 admin_level=6 admin_level=8 admin_level=9 admin_level=10
+
+// special entry for the circle symbol of POIs
+POI_CIRCLE_SYMBOL
+
+// the following line must be the last line in the file to get the highest ID
+LEVELS_PER_LAYER

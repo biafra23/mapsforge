@@ -1,0 +1,24 @@
+#mapping of the form : key=value
+#value is average speed in km/h
+#one additional entry - DEFAULT_VALUE must be provided
+
+motorway=100
+motorway_link=80
+trunk=90
+trunk_link=70
+primary=50
+primary_link=35
+secondary=40
+secondary_link=30
+tertiary=35
+unclassified=35
+road=35
+residental=25
+living_street=20
+service=35
+#track
+#pedestrian
+#raceway
+services=35
+#bus_guideway
+DEFAULT_VALUE=35
