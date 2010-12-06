@@ -16,9 +16,9 @@
  */
 package org.mapsforge.android.maps;
 
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
-import android.view.MotionEvent;
 
 /**
  * ItemizedOverlay is an abstract base class to display a list of OverlayItems.
@@ -31,15 +31,14 @@ public abstract class ItemizedOverlay<Item extends OverlayItem> extends Overlay 
 
 	private int bottom;
 	private final Drawable defaultMarker;
-	private Item hitTestItem;
-	private Drawable hitTestMarker;
-	private Point hitTestPosition;
+	private Point itemPoint;
 	private Drawable itemMarker;
 	private final Point itemPosition;
 	private int left;
 	private int numberOfItems;
 	private Item overlayItem;
 	private int right;
+	private Point tapPosition;
 	private int top;
 
 	/**
@@ -54,97 +53,8 @@ public abstract class ItemizedOverlay<Item extends OverlayItem> extends Overlay 
 	}
 
 	@Override
-	public synchronized boolean onTouchEvent(MotionEvent event, MapView mapView) {
-		// iterate over all items
-		for (int i = size() - 1; i >= 0; --i) {
-			// get the current item
-			this.hitTestItem = createItem(i);
-
-			if (hitTest(this.hitTestItem, this.hitTestItem.getMarker(), (int) event.getX(),
-					(int) event.getY())) {
-				// abort the testing at the first hit
-				return onTap(i);
-			}
-		}
-		// no hit
-		return false;
-	}
-
-	/**
-	 * Returns the numbers of items in this Overlay.
-	 * 
-	 * @return the numbers of items in this Overlay.
-	 */
-	public abstract int size();
-
-	/**
-	 * Creates an item in the Overlay.
-	 * 
-	 * @param i
-	 *            the index of the item.
-	 * @return the item.
-	 */
-	protected abstract Item createItem(int i);
-
-	/**
-	 * Calculates if the given point is within the bounds of an item.
-	 * 
-	 * @param item
-	 *            the item to test.
-	 * @param marker
-	 *            the marker of the item.
-	 * @param hitX
-	 *            the x coordinate of the point.
-	 * @param hitY
-	 *            the y coordinate of the point.
-	 * @return true if the point is within the bounds of the item.
-	 */
-	protected boolean hitTest(Item item, Drawable marker, int hitX, int hitY) {
-		// check if the item has a position
-		if (item.getPoint() == null) {
-			return false;
-		}
-		this.hitTestPosition = this.projection.toPixels(item.getPoint(), this.hitTestPosition);
-
-		// select the correct marker for the item
-		if (marker == null) {
-			this.hitTestMarker = this.defaultMarker;
-		} else {
-			this.hitTestMarker = marker;
-		}
-
-		// check if the hit position is within the bounds of the marker
-		if (Math.abs(this.hitTestPosition.x - hitX) <= this.hitTestMarker.getIntrinsicWidth() / 2
-				&& Math.abs(this.hitTestPosition.y - hitY) <= this.hitTestMarker
-						.getIntrinsicHeight() / 2) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Handles a tap event.
-	 * <p>
-	 * The default implementation of this method does nothing and returns false.
-	 * 
-	 * @param index
-	 *            the position of the item.
-	 * 
-	 * @return true if the event was handled, false otherwise.
-	 */
-	protected boolean onTap(int index) {
-		return false;
-	}
-
-	/**
-	 * This method should be called after items have been added to the Overlay.
-	 */
-	protected final void populate() {
-		super.requestRedraw();
-	}
-
-	@Override
-	final synchronized void drawOverlayBitmap(Point drawPosition, byte drawZoomLevel) {
+	public final synchronized void drawOverlayBitmap(Canvas canvas, Point drawPosition,
+			Projection projection, byte drawZoomLevel) {
 		this.numberOfItems = size();
 		if (this.numberOfItems < 1) {
 			// no items to draw
@@ -163,7 +73,7 @@ public abstract class ItemizedOverlay<Item extends OverlayItem> extends Overlay 
 
 			// make sure that the cached item position is valid
 			if (drawZoomLevel != this.overlayItem.cachedZoomLevel) {
-				this.overlayItem.cachedMapPosition = this.projection.toPoint(this.overlayItem
+				this.overlayItem.cachedMapPosition = projection.toPoint(this.overlayItem
 						.getPoint(), this.overlayItem.cachedMapPosition, drawZoomLevel);
 				this.overlayItem.cachedZoomLevel = drawZoomLevel;
 			}
@@ -186,8 +96,8 @@ public abstract class ItemizedOverlay<Item extends OverlayItem> extends Overlay 
 			this.bottom = this.itemPosition.y + (this.itemMarker.getIntrinsicHeight() / 2);
 
 			// check if the bounding box of the marker intersects with the canvas
-			if (this.right >= 0 && this.left <= this.internalCanvas.getWidth()
-					&& this.bottom >= 0 && this.top <= this.internalCanvas.getHeight()) {
+			if (this.right >= 0 && this.left <= canvas.getWidth() && this.bottom >= 0
+					&& this.top <= canvas.getHeight()) {
 				// set the relative center position of the marker
 				this.itemMarker.setBounds(this.itemPosition.x
 						- this.itemMarker.getIntrinsicWidth() / 2, this.itemPosition.y
@@ -196,13 +106,87 @@ public abstract class ItemizedOverlay<Item extends OverlayItem> extends Overlay 
 						+ this.itemMarker.getIntrinsicHeight() / 2);
 
 				// draw the item marker on the canvas
-				this.itemMarker.draw(this.internalCanvas);
+				this.itemMarker.draw(canvas);
 			}
 		}
 	}
 
 	@Override
-	final String getThreadName() {
+	public final String getThreadName() {
 		return THREAD_NAME;
+	}
+
+	@Override
+	public synchronized boolean onTap(GeoPoint geoPoint, MapView mapView) {
+		Projection projection = mapView.getProjection();
+		this.tapPosition = projection.toPixels(geoPoint, this.tapPosition);
+
+		// iterate over all items
+		for (int i = size() - 1; i >= 0; --i) {
+			// get the current item
+			this.overlayItem = createItem(i);
+
+			// check if the item has a position
+			if (this.overlayItem.getPoint() == null) {
+				continue;
+			}
+
+			this.itemPoint = projection.toPixels(this.overlayItem.getPoint(), this.itemPoint);
+
+			// select the correct marker for the item
+			if (this.overlayItem.getMarker() == null) {
+				this.itemMarker = this.defaultMarker;
+			} else {
+				this.itemMarker = this.overlayItem.getMarker();
+			}
+
+			// check if the hit position is within the bounds of the marker
+			if (Math.abs(this.itemPoint.x - this.tapPosition.x) <= this.itemMarker
+					.getIntrinsicWidth() / 2
+					&& Math.abs(this.itemPoint.y - this.tapPosition.y) <= this.itemMarker
+							.getIntrinsicHeight() / 2) {
+				return onTap(i);
+			}
+		}
+
+		// no hit
+		return false;
+	}
+
+	/**
+	 * Returns the numbers of items in this Overlay.
+	 * 
+	 * @return the numbers of items in this Overlay.
+	 */
+	public abstract int size();
+
+	/**
+	 * Creates an item in the Overlay.
+	 * 
+	 * @param i
+	 *            the index of the item.
+	 * @return the item.
+	 */
+	protected abstract Item createItem(int i);
+
+	/**
+	 * Handles a tap event.
+	 * <p>
+	 * The default implementation of this method does nothing and returns false.
+	 * 
+	 * @param index
+	 *            the position of the item.
+	 * 
+	 * @return true if the event was handled, false otherwise.
+	 */
+	protected boolean onTap(int index) {
+		return false;
+	}
+
+	/**
+	 * This method should be called after items have been added to the Overlay.
+	 */
+	protected final void populate() {
+		super.requestRedraw();
 	}
 }

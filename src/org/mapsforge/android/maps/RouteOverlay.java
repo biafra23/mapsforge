@@ -16,6 +16,7 @@
  */
 package org.mapsforge.android.maps;
 
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -84,7 +85,8 @@ public class RouteOverlay extends Overlay {
 	}
 
 	@Override
-	final synchronized void drawOverlayBitmap(Point drawPosition, byte drawZoomLevel) {
+	public final synchronized void drawOverlayBitmap(Canvas canvas, Point drawPosition,
+			Projection projection, byte drawZoomLevel) {
 		if (this.cachedWayPositions == null || this.cachedWayPositions.length < 1) {
 			// no way nodes to draw
 			return;
@@ -96,7 +98,7 @@ public class RouteOverlay extends Overlay {
 		// make sure that the cached way node positions are valid
 		if (drawZoomLevel != this.cachedZoomLevel) {
 			for (int i = 0; i < this.cachedWayPositions.length; ++i) {
-				this.cachedWayPositions[i] = this.projection.toPoint(this.wayNodes[i],
+				this.cachedWayPositions[i] = projection.toPoint(this.wayNodes[i],
 						this.cachedWayPositions[i], drawZoomLevel);
 			}
 			this.cachedZoomLevel = drawZoomLevel;
@@ -112,11 +114,11 @@ public class RouteOverlay extends Overlay {
 		}
 
 		// draw the path on the canvas
-		this.internalCanvas.drawPath(this.path, this.paint);
+		canvas.drawPath(this.path, this.paint);
 	}
 
 	@Override
-	String getThreadName() {
+	public String getThreadName() {
 		return THREAD_NAME;
 	}
 }

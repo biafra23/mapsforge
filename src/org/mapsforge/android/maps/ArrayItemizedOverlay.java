@@ -56,6 +56,18 @@ public class ArrayItemizedOverlay extends ItemizedOverlay<OverlayItem> {
 	 */
 	public synchronized void addOverlay(OverlayItem overlayItem) {
 		this.overlayItems.add(overlayItem);
+		populate();
+	}
+
+	/**
+	 * Removes the given item from the Overlay.
+	 * 
+	 * @param overlayItem
+	 *            the item that should be removed from the Overlay.
+	 */
+	public synchronized void removeOverlay(OverlayItem overlayItem) {
+		this.overlayItems.remove(overlayItem);
+		populate();
 	}
 
 	@Override

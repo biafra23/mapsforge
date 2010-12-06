@@ -54,7 +54,7 @@ abstract class MapGenerator extends Thread {
 	}
 
 	@Override
-	final public void run() {
+	public final void run() {
 		setName(getThreadName());
 		setup(this.currentTileBitmap);
 

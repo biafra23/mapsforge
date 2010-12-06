@@ -21,7 +21,7 @@ import android.util.Log;
 /**
  * Class used for logging text to the console.
  */
-class Logger {
+final class Logger {
 	/**
 	 * Log a simple string message with debug level.
 	 * 
@@ -42,12 +42,19 @@ class Logger {
 		StringBuilder stringBuilder = new StringBuilder(512);
 		stringBuilder.append("Exception in thread \"" + Thread.currentThread().getName()
 				+ "\" " + e.toString());
-		StackTraceElement stack[] = e.getStackTrace();
+		StackTraceElement[] stack = e.getStackTrace();
 		for (int i = 0; i < stack.length; ++i) {
 			stringBuilder.append("\n\tat ").append(stack[i].getMethodName()).append("(")
 					.append(stack[i].getFileName()).append(":")
 					.append(stack[i].getLineNumber()).append(")");
 		}
 		Log.e("osm", stringBuilder.toString());
+	}
+
+	/**
+	 * Empty private constructor to prevent object creation.
+	 */
+	private Logger() {
+		// do nothing
 	}
 }

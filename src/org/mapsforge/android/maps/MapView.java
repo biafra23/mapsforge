@@ -16,33 +16,20 @@
  */
 package org.mapsforge.android.maps;
 
+import android.content.Context;
+import android.graphics.*;
+import android.os.*;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.*;
+import android.widget.ZoomControls;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.Typeface;
-import android.os.Build;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
-import android.os.SystemClock;
-import android.util.AttributeSet;
-import android.util.Log;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
-import android.view.View;
-import android.view.ViewConfiguration;
-import android.view.ViewGroup;
-import android.widget.ZoomControls;
 
 /**
  * A MapView shows a map on the display of the device. It handles all user input and touch
@@ -76,14 +63,6 @@ import android.widget.ZoomControls;
  * runtime. The default texts are in English.
  */
 public class MapView extends ViewGroup {
-
-	/**
-	 * bla. blub
-	 */
-	public void check() {
-		Log.i("Beacon", "check");
-	}
-
 	/**
 	 * Implementation for multi-touch capable devices.
 	 */
@@ -94,8 +73,8 @@ public class MapView extends ViewGroup {
 		private int pointerIndex;
 		private final ScaleGestureDetector scaleGestureDetector;
 
-		MultiTouchHandler(float mapMoveDelta) {
-			super(mapMoveDelta);
+		MultiTouchHandler() {
+			super();
 			this.activePointerId = INVALID_POINTER_ID;
 			this.scaleGestureDetector = new ScaleGestureDetector(getMapActivity(),
 					new ScaleListener());
@@ -103,6 +82,9 @@ public class MapView extends ViewGroup {
 
 		@Override
 		boolean handleTouchEvent(MotionEvent event) {
+			// round the event coordinates to integers
+			event.setLocation((int) event.getX(), (int) event.getY());
+
 			// let the ScaleGestureDetector inspect all events
 			this.scaleGestureDetector.onTouchEvent(event);
 
@@ -145,7 +127,7 @@ public class MapView extends ViewGroup {
 				this.previousPositionY = event.getY(this.pointerIndex);
 
 				// add the movement to the transformation matrices
-				MapView.this.matrixPostTranslate(this.moveX, this.moveY);
+				matrixPostTranslate(this.moveX, this.moveY);
 				synchronized (MapView.this.overlays) {
 					for (Overlay overlay : MapView.this.overlays) {
 						overlay.matrixPostTranslate(this.moveX, this.moveY);
@@ -153,7 +135,7 @@ public class MapView extends ViewGroup {
 				}
 
 				// move the map and the Overlays
-				MapView.this.moveMap(this.moveX, this.moveY);
+				moveMap(this.moveX, this.moveY);
 				synchronized (MapView.this.overlays) {
 					for (Overlay overlay : MapView.this.overlays) {
 						overlay.requestRedraw();
@@ -163,21 +145,55 @@ public class MapView extends ViewGroup {
 				handleTiles(true);
 				return true;
 			} else if (this.action == MotionEvent.ACTION_UP) {
+				this.pointerIndex = event.findPointerIndex(this.activePointerId);
+				this.activePointerId = INVALID_POINTER_ID;
 				hideZoomControlsDelayed();
 				if (this.mapMoved) {
+					this.previousEventTap = false;
 					synchronized (MapView.this.overlays) {
 						for (Overlay overlay : MapView.this.overlays) {
 							overlay.requestRedraw();
 						}
 					}
 				} else {
+					if (this.previousEventTap) {
+						// calculate the distance to the previous tap position
+						this.tapDiffX = Math.abs(event.getX(this.pointerIndex)
+								- this.previousTapX);
+						this.tapDiffY = Math.abs(event.getY(this.pointerIndex)
+								- this.previousTapY);
+						this.tapDiffTime = event.getEventTime() - this.previousTapTime;
+
+						// check if a double-tap event occurred
+						if (this.tapDiffX < this.doubleTapDelta
+								&& this.tapDiffY < this.doubleTapDelta
+								&& this.tapDiffTime < this.doubleTapTimeout) {
+							// double-tap event
+							this.previousEventTap = false;
+							setCenter(getProjection().fromPixels(
+									(int) event.getX(this.pointerIndex),
+									(int) event.getY(this.pointerIndex)));
+							zoom((byte) 1);
+							return true;
+						}
+					} else {
+						this.previousEventTap = true;
+					}
+
+					// store the position and the time of this tap event
+					this.previousTapX = event.getX(this.pointerIndex);
+					this.previousTapY = event.getY(this.pointerIndex);
+					this.previousTapTime = event.getEventTime();
+
+					this.tapPoint = getProjection().fromPixels(
+							(int) event.getX(this.pointerIndex),
+							(int) event.getY(this.pointerIndex));
 					synchronized (MapView.this.overlays) {
 						for (Overlay overlay : MapView.this.overlays) {
-							overlay.onTouchEvent(event, MapView.this);
+							overlay.onTap(this.tapPoint, MapView.this);
 						}
 					}
 				}
-				this.activePointerId = INVALID_POINTER_ID;
 				return true;
 			} else if (this.action == MotionEvent.ACTION_CANCEL) {
 				hideZoomControlsDelayed();
@@ -205,7 +221,7 @@ public class MapView extends ViewGroup {
 		}
 	}
 
-	private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+	private class ScaleListener implements ScaleGestureDetector.OnScaleGestureListener {
 		private float focusX;
 		private float focusY;
 		private float scaleFactor;
@@ -222,8 +238,7 @@ public class MapView extends ViewGroup {
 		public boolean onScale(ScaleGestureDetector detector) {
 			this.scaleFactor = detector.getScaleFactor();
 			this.scaleFactorApplied *= this.scaleFactor;
-			MapView.this.matrixPostScale(this.scaleFactor, this.scaleFactor, this.focusX,
-					this.focusY);
+			matrixPostScale(this.scaleFactor, this.scaleFactor, this.focusX, this.focusY);
 			synchronized (MapView.this.overlays) {
 				for (Overlay overlay : MapView.this.overlays) {
 					overlay.matrixPostScale(this.scaleFactor, this.scaleFactor, this.focusX,
@@ -267,12 +282,15 @@ public class MapView extends ViewGroup {
 	 * Implementation for single-touch capable devices.
 	 */
 	private class SingleTouchHandler extends TouchEventHandler {
-		SingleTouchHandler(float mapMoveDelta) {
-			super(mapMoveDelta);
+		SingleTouchHandler() {
+			super();
 		}
 
 		@Override
 		boolean handleTouchEvent(MotionEvent event) {
+			// round the event coordinates to integers
+			event.setLocation((int) event.getX(), (int) event.getY());
+
 			if (event.getAction() == MotionEvent.ACTION_DOWN) {
 				// save the position of the event
 				this.previousPositionX = event.getX();
@@ -301,7 +319,7 @@ public class MapView extends ViewGroup {
 				this.previousPositionY = event.getY();
 
 				// add the movement to the transformation matrices
-				MapView.this.matrixPostTranslate(this.moveX, this.moveY);
+				matrixPostTranslate(this.moveX, this.moveY);
 				synchronized (MapView.this.overlays) {
 					for (Overlay overlay : MapView.this.overlays) {
 						overlay.matrixPostTranslate(this.moveX, this.moveY);
@@ -309,7 +327,7 @@ public class MapView extends ViewGroup {
 				}
 
 				// move the map and the Overlays
-				MapView.this.moveMap(this.moveX, this.moveY);
+				moveMap(this.moveX, this.moveY);
 				synchronized (MapView.this.overlays) {
 					for (Overlay overlay : MapView.this.overlays) {
 						overlay.requestRedraw();
@@ -321,15 +339,44 @@ public class MapView extends ViewGroup {
 			} else if (event.getAction() == MotionEvent.ACTION_UP) {
 				hideZoomControlsDelayed();
 				if (this.mapMoved) {
+					this.previousEventTap = false;
 					synchronized (MapView.this.overlays) {
 						for (Overlay overlay : MapView.this.overlays) {
 							overlay.requestRedraw();
 						}
 					}
 				} else {
+					if (this.previousEventTap) {
+						// calculate the distance to the previous tap position
+						this.tapDiffX = Math.abs(event.getX() - this.previousTapX);
+						this.tapDiffY = Math.abs(event.getY() - this.previousTapY);
+						this.tapDiffTime = event.getEventTime() - this.previousTapTime;
+
+						// check if a double-tap event occurred
+						if (this.tapDiffX < this.doubleTapDelta
+								&& this.tapDiffY < this.doubleTapDelta
+								&& this.tapDiffTime < this.doubleTapTimeout) {
+							// double-tap event
+							this.previousEventTap = false;
+							setCenter(getProjection().fromPixels((int) event.getX(),
+									(int) event.getY()));
+							zoom((byte) 1);
+							return true;
+						}
+					} else {
+						this.previousEventTap = true;
+					}
+
+					// store the position and the time of this tap event
+					this.previousTapX = event.getX();
+					this.previousTapY = event.getY();
+					this.previousTapTime = event.getEventTime();
+
+					this.tapPoint = getProjection().fromPixels((int) event.getX(),
+							(int) event.getY());
 					synchronized (MapView.this.overlays) {
 						for (Overlay overlay : MapView.this.overlays) {
-							overlay.onTouchEvent(event, MapView.this);
+							overlay.onTap(this.tapPoint, MapView.this);
 						}
 					}
 				}
@@ -344,10 +391,20 @@ public class MapView extends ViewGroup {
 	}
 
 	/**
-	 * Abstract base class for all handlers of touch events. Default visibility is required to
-	 * avoid a synthetic method.
+	 * Abstract base class for the single-touch and multi-touch handler. Default visibility is
+	 * required to avoid a synthetic method.
 	 */
 	abstract class TouchEventHandler {
+		/**
+		 * Absolute threshold value for a double-tap event.
+		 */
+		final float doubleTapDelta;
+
+		/**
+		 * Maximum time difference in milliseconds for a double-tap event.
+		 */
+		final int doubleTapTimeout;
+
 		/**
 		 * Flag to indicate if the map has been moved.
 		 */
@@ -369,6 +426,11 @@ public class MapView extends ViewGroup {
 		float moveY;
 
 		/**
+		 * Flag to store if the previous event was a touch event.
+		 */
+		boolean previousEventTap;
+
+		/**
 		 * Stores the x coordinate of the previous touch event.
 		 */
 		float previousPositionX;
@@ -379,13 +441,45 @@ public class MapView extends ViewGroup {
 		float previousPositionY;
 
 		/**
-		 * Default constructor which must be called by all subclasses.
-		 * 
-		 * @param mapMoveDelta
-		 *            the absolute threshold value of a motion event.
+		 * Stores the time of the previous tap event.
 		 */
-		TouchEventHandler(float mapMoveDelta) {
-			this.mapMoveDelta = mapMoveDelta;
+		long previousTapTime;
+
+		/**
+		 * Stores the X position of the previous tap event.
+		 */
+		float previousTapX;
+
+		/**
+		 * Stores the Y position of the previous tap event.
+		 */
+		float previousTapY;
+
+		/**
+		 * Stores the time difference between the previous and the current tap event.
+		 */
+		long tapDiffTime;
+
+		/**
+		 * Stores the X difference between the previous and the current tap event.
+		 */
+		float tapDiffX;
+
+		/**
+		 * Stores the Y difference between the previous and the current tap event.
+		 */
+		float tapDiffY;
+
+		/**
+		 * Stores the coordinates of a tap event.
+		 */
+		GeoPoint tapPoint;
+
+		TouchEventHandler() {
+			ViewConfiguration viewConfiguration = ViewConfiguration.get(getMapActivity());
+			this.mapMoveDelta = viewConfiguration.getScaledTouchSlop();
+			this.doubleTapDelta = viewConfiguration.getScaledDoubleTapSlop();
+			this.doubleTapTimeout = ViewConfiguration.getDoubleTapTimeout();
 		}
 
 		/**
@@ -398,10 +492,8 @@ public class MapView extends ViewGroup {
 		abstract boolean handleTouchEvent(MotionEvent event);
 	}
 
-	/**
-	 * Relative threshold value of a motion event to be interpreted as a move.
-	 */
-	private static final int DEFAULT_MAP_MOVE_DELTA = 8;
+
+    List<ZoomChangeListener> zoomChangeListeners = new ArrayList<ZoomChangeListener>();
 
 	/**
 	 * Default operation mode of a MapView if no other mode is specified.
@@ -418,8 +510,19 @@ public class MapView extends ViewGroup {
 	 */
 	private static final int DEFAULT_TILE_MEMORY_CARD_CACHE_SIZE = 100;
 
+	/**
+	 * Default value for the kilometer text field.
+	 */
 	private static final String DEFAULT_UNIT_SYMBOL_KILOMETER = " km";
+
+	/**
+	 * Default value for the meter text field.
+	 */
 	private static final String DEFAULT_UNIT_SYMBOL_METER = " m";
+
+	/**
+	 * Path to the caching folder on the external storage.
+	 */
 	private static final String EXTERNAL_STORAGE_DIRECTORY = File.separatorChar + "mapsforge";
 
 	/**
@@ -441,6 +544,7 @@ public class MapView extends ViewGroup {
 	private static final int[] SCALE_BAR_VALUES = { 10000000, 5000000, 2000000, 1000000,
 			500000, 200000, 100000, 50000, 20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50,
 			20, 10, 5, 2, 1 };
+
 	private static final short SCALE_BAR_WIDTH = 130;
 
 	/**
@@ -459,6 +563,9 @@ public class MapView extends ViewGroup {
 	private static final long ZOOM_CONTROLS_TIMEOUT = ViewConfiguration
 			.getZoomControlsTimeout();
 
+	/**
+	 * Minimum possible zoom level.
+	 */
 	private static final byte ZOOM_MIN = 0;
 
 	/**
@@ -868,7 +975,12 @@ public class MapView extends ViewGroup {
 	public void setFpsCounter(boolean showFpsCounter) {
 		this.showFpsCounter = showFpsCounter;
 		// invalidate the MapView
-		invalidate();
+		getMapActivity().runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				invalidate();
+			}
+		});
 	}
 
 	/**
@@ -881,7 +993,7 @@ public class MapView extends ViewGroup {
 	 */
 	public void setMapFile(String newMapFile) {
 
-		Log.i("Beacon", "setMapFile(): MapFile: " + newMapFile);
+        Log.i("Beacon", "setMapFile(): MapFile: " + newMapFile);
 
 		if (this.mapViewMode.requiresInternetConnection()) {
 			throw new UnsupportedOperationException();
@@ -919,7 +1031,12 @@ public class MapView extends ViewGroup {
 		} else {
 			this.mapFile = null;
 			clearMapView();
-			invalidate();
+			getMapActivity().runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					invalidate();
+				}
+			});
 		}
 	}
 
@@ -984,7 +1101,12 @@ public class MapView extends ViewGroup {
 			renderScaleBar();
 		}
 		// invalidate the MapView
-		invalidate();
+		getMapActivity().runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				invalidate();
+			}
+		});
 	}
 
 	/**
@@ -1134,11 +1256,9 @@ public class MapView extends ViewGroup {
 	private synchronized void setupMapView() {
 		// set up the TouchEventHandler depending on the Android version
 		if (Integer.parseInt(Build.VERSION.SDK) < Build.VERSION_CODES.FROYO) {
-			this.touchEventHandler = new SingleTouchHandler(DEFAULT_MAP_MOVE_DELTA
-					* this.mapActivity.getResources().getDisplayMetrics().density);
+			this.touchEventHandler = new SingleTouchHandler();
 		} else {
-			this.touchEventHandler = new MultiTouchHandler(DEFAULT_MAP_MOVE_DELTA
-					* this.mapActivity.getResources().getDisplayMetrics().density);
+			this.touchEventHandler = new MultiTouchHandler();
 		}
 
 		this.tileMemoryCardCacheSize = DEFAULT_TILE_MEMORY_CARD_CACHE_SIZE;
@@ -1159,7 +1279,125 @@ public class MapView extends ViewGroup {
 		this.matrix = new Matrix();
 
 		// create the thread-safe Overlay list
-		this.overlays = Collections.synchronizedList(new ArrayList<Overlay>(4));
+		this.overlays = Collections.synchronizedList(new ArrayList<Overlay>(4) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void add(int index, Overlay overlay) {
+				if (!overlay.isAlive()) {
+					overlay.start();
+				}
+				overlay.setupOverlay(MapView.this);
+				super.add(index, overlay);
+			}
+
+			@Override
+			public boolean add(Overlay overlay) {
+				if (!overlay.isAlive()) {
+					overlay.start();
+				}
+				overlay.setupOverlay(MapView.this);
+				return super.add(overlay);
+			}
+
+			@Override
+			public boolean addAll(Collection<? extends Overlay> collection) {
+				for (Overlay overlay : collection) {
+					if (!overlay.isAlive()) {
+						overlay.start();
+					}
+					overlay.setupOverlay(MapView.this);
+				}
+				return super.addAll(collection);
+			}
+
+			@Override
+			public boolean addAll(int index, Collection<? extends Overlay> collection) {
+				for (Overlay overlay : collection) {
+					if (!overlay.isAlive()) {
+						overlay.start();
+					}
+					overlay.setupOverlay(MapView.this);
+				}
+				return super.addAll(index, collection);
+			}
+
+			@Override
+			public void clear() {
+				for (int i = size() - 1; i >= 0; --i) {
+					get(i).interrupt();
+				}
+				super.clear();
+				getMapActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						invalidate();
+					}
+				});
+			}
+
+			@Override
+			public Overlay remove(int index) {
+				get(index).interrupt();
+				Overlay retval = super.remove(index);
+				getMapActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						invalidate();
+					}
+				});
+				return retval;
+			}
+
+			@Override
+			public boolean remove(Object object) {
+				if (object instanceof Overlay) {
+					((Overlay) object).interrupt();
+				}
+				boolean retval = super.remove(object);
+				getMapActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						invalidate();
+					}
+				});
+				return retval;
+			}
+
+			@Override
+			public boolean removeAll(Collection<?> collection) {
+				for (Object object : collection) {
+					if (object instanceof Overlay) {
+						((Overlay) object).interrupt();
+					}
+				}
+				boolean retval = super.removeAll(collection);
+				getMapActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						invalidate();
+					}
+				});
+				return retval;
+			}
+
+			@Override
+			public Overlay set(int index, Overlay overlay) {
+				get(index).interrupt();
+				if (!overlay.isAlive()) {
+					overlay.start();
+				}
+				overlay.setupOverlay(MapView.this);
+				Overlay retval = super.set(index, overlay);
+				getMapActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						invalidate();
+					}
+				});
+				return retval;
+			}
+		});
 
 		// create the tile bitmap and buffer
 		this.tileBitmap = Bitmap.createBitmap(Tile.TILE_SIZE, Tile.TILE_SIZE,
@@ -1188,7 +1426,7 @@ public class MapView extends ViewGroup {
 		this.latitude = defaultStartPoint.getLatitude();
 		this.longitude = defaultStartPoint.getLongitude();
 		this.zoomLevel = this.mapGenerator.getDefaultZoomLevel();
-
+        notifyZoomChange(this.zoomLevel);
 		// create and start the MapMover thread
 		this.mapMover = new MapMover();
 		this.mapMover.setMapView(this);
@@ -1328,9 +1566,6 @@ public class MapView extends ViewGroup {
 		// draw the Overlays
 		synchronized (this.overlays) {
 			for (Overlay overlay : this.overlays) {
-				if (overlay.isNew()) {
-					overlay.setupOverlay(this);
-				}
 				overlay.draw(canvas, this, false);
 			}
 		}
@@ -1403,6 +1638,13 @@ public class MapView extends ViewGroup {
 			this.mapViewBitmap1.eraseColor(MAP_VIEW_BACKGROUND);
 			this.mapViewCanvas = new Canvas(this.mapViewBitmap1);
 			handleTiles(true);
+
+			// set up the Overlays
+			synchronized (this.overlays) {
+				for (Overlay overlay : this.overlays) {
+					overlay.setupOverlay(this);
+				}
+			}
 		}
 	}
 
@@ -1618,7 +1860,7 @@ public class MapView extends ViewGroup {
 		} else if (!this.mapViewMode.requiresInternetConnection()
 				&& (this.database == null || this.database.getMapBoundary() == null || !this.database
 						.getMapBoundary().contains(getMapCenter().getLongitudeE6(),
-						getMapCenter().getLatitudeE6()))) {
+								getMapCenter().getLatitudeE6()))) {
 			return false;
 		}
 		return true;
@@ -1707,7 +1949,7 @@ public class MapView extends ViewGroup {
 		if (this.mapMover != null) {
 			this.mapMover.pause();
 		}
-		Log.i("Beacon", "----------------------<-<-<-<-<-<-<-<-<-<-<-<-<-<-< onPause onPause onPause");
+        Log.i("Beacon", "onPause onPause onPause");
 		// pause the MapGenerator thread
 		if (this.mapGenerator != null) {
 			this.mapGenerator.pause();
@@ -1867,7 +2109,7 @@ public class MapView extends ViewGroup {
 		if (this.mapViewMode.requiresInternetConnection()
 				|| (this.database != null && this.database.getMapBoundary() != null && this.database
 						.getMapBoundary().contains(point.getLongitudeE6(),
-						point.getLatitudeE6()))) {
+								point.getLatitudeE6()))) {
 			if (hasValidCenter()) {
 				// calculate the distance between previous and current position
 				synchronized (this) {
@@ -1894,7 +2136,8 @@ public class MapView extends ViewGroup {
 				this.latitude = getValidLatitude(point.getLatitude());
 				this.longitude = point.getLongitude();
 				this.zoomLevel = getValidZoomLevel(zoom);
-				Log.i("Beacon", "setCenterAndZoom: ZoomLevel changed");
+                Log.i("Beacon", "ZOOM: setCenterAndZoom: ZoomLevel changed");
+                notifyZoomChange(zoom);
 			}
 			synchronized (this.overlays) {
 				for (Overlay overlay : this.overlays) {
@@ -2010,8 +2253,8 @@ public class MapView extends ViewGroup {
 		synchronized (this) {
 			this.zoomLevel += zoomLevelDiff;
 		}
-		Log.i("Beacon", "zoom(): ZoomLevel changed");
-
+        Log.i("Beacon", "ZOOM: zoom(): ZoomLevel changed");
+        notifyZoomChange(this.zoomLevel);
 		synchronized (this.overlays) {
 			for (Overlay overlay : this.overlays) {
 				overlay.requestRedraw();
@@ -2027,4 +2270,21 @@ public class MapView extends ViewGroup {
 		handleTiles(true);
 		return true;
 	}
+
+    public void addZoomChangeLister(ZoomChangeListener zcl) {
+        zoomChangeListeners.add(zcl);
+    }
+
+    public void removeZoomChangeLister(ZoomChangeListener zcl) {
+        zoomChangeListeners.remove(zcl);
+    }
+
+    private void notifyZoomChange(int zoomLevel) {
+        Log.i("Beacon", "ZOOM: notifyZoomChange(): ZoomLevel changed");
+
+        for (ZoomChangeListener zcl : zoomChangeListeners) {
+            zcl.zoomChanged(zoomLevel);
+        }
+
+    }
 }

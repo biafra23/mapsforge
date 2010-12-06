@@ -1100,27 +1100,34 @@ class DependencyCache {
 			if (ref == null) {
 				continue;
 			}
-			if (up)
+
+			if (up) {
 				if (ref.y - ref.height < 0) {
 					refPos[i] = null;
 					continue;
 				}
+			}
 
-			if (down)
+			if (down) {
 				if (ref.y >= Tile.TILE_SIZE) {
 					refPos[i] = null;
 					continue;
 				}
-			if (left)
+			}
+
+			if (left) {
 				if (ref.x < 0) {
 					refPos[i] = null;
 					continue;
 				}
-			if (right)
+			}
+
+			if (right) {
 				if (ref.x + ref.width > Tile.TILE_SIZE) {
 					refPos[i] = null;
 					continue;
 				}
+			}
 		}
 
 		// removes all Reverence Points that intersects with Labels from the Dependency Cache

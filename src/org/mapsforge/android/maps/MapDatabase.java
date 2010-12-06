@@ -384,13 +384,11 @@ public class MapDatabase {
 	 * 
 	 * @param mapGenerator
 	 *            the MapGenerator callback which handles the extracted map elements.
-	 * @throws IndexOutOfBoundsException
-	 *             if the block contains invalid data.
 	 * @throws UnsupportedEncodingException
-	 *             if the string decoding fails.
+	 *             if string decoding fails.
 	 */
 	private void processBlock(DatabaseMapGenerator mapGenerator)
-			throws IndexOutOfBoundsException, UnsupportedEncodingException {
+			throws UnsupportedEncodingException {
 		if (this.debugFile) {
 			// get and check the block signature
 			this.blockSignature = new String(this.readBuffer, this.bufferPosition,

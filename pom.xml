@@ -140,15 +140,8 @@
                     <source>1.6</source>
                     <target>1.6</target>
                     <compilerId>eclipse</compilerId>
-                    <!--<verbose>true</verbose>-->
-                    <!--<excludes>-->
-                    <!--<exclude>org/mapsforge/preprocessing/*</exclude>-->
-                    <!--<exclude>org/mapsforge/core/*</exclude>-->
-                    <!--<exclude>org/mapsforge/server/*</exclude>-->
-                    <!--<exclude>org/mapsforge/poi/*</exclude>-->
-                    <!--<exclude>org/mapsforge/directions/*</exclude>-->
-                    <!--<exclude>org/mapsforge/android/routing/*</exclude>-->
-                    <!--</excludes>-->
+<!--
+-->
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
                 </configuration>

@@ -157,4 +157,11 @@ final class LayerIds {
 	static final byte WATERWAY$RIVER = 32;
 	static final byte WATERWAY$RIVERBANK = 39;
 	static final byte WATERWAY$STREAM = 33;
+
+	/**
+	 * Empty private constructor to prevent object creation.
+	 */
+	private LayerIds() {
+		// do nothing
+	}
 }

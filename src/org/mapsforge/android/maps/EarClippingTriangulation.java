@@ -24,38 +24,6 @@ import java.util.ArrayList;
  * @author jonas.hoffmann
  */
 class EarClippingTriangulation {
-	/**
-	 * test the function of the EarClippingTriangulation class
-	 * 
-	 * @param args
-	 *            command line arguments (ignored)
-	 */
-	public static void main(String[] args) {
-		// just a test
-
-		// square clockwise
-		// float[] poly = new float[] { 1.0f, 1.0f, 5.0f, 1.0f, 5.0f, 5.0f, }; //
-		// square anticlockwise
-		// float[] poly = new float[] { 5.0f, 1.0f, 1.0f, 1.0f, 1.0f, 5.0f, 5.0f, 5.0f };
-		// float[] poly = new float[] { 1.9f, 1f, 4f, 1.6f, 3.63f, 2.52f, 5f, 3.5f, 2.66f,
-		// 4.71f,
-		// 0.72f, 2.28f };
-		float[] poly = new float[] { 0.72f, 2.28f, 2.66f, 4.71f, 5f, 3.5f, 3.63f, 2.52f, 4f,
-				1.6f, 1.9f, 1f };
-
-		EarClippingTriangulation ec = new EarClippingTriangulation(poly);
-
-		System.out.println("triangulation: \n");
-		float[] f = ec.getTrianglesAsFloatArray();
-		for (int i = 0; i < ec.getTrianglesAsFloatArray().length; i++) {
-			System.out.print(f[i] + " ");
-			if (((i + 1) % 2) == 0)
-				System.out.println();
-			if (((i + 1) % 6) == 0)
-				System.out.println();
-		}
-	}
-
 	/* current number of polygon vertices */
 	private int num;
 
@@ -86,12 +54,6 @@ class EarClippingTriangulation {
 			this.num--;
 		}
 
-		// if (clockwise) {
-		// System.out.println("is clockwise");
-		// } else {
-		// System.out.println("is anti-clockwise");
-		// }
-
 		this.xCoords = new float[this.num];
 		this.yCoords = new float[this.num];
 		this.trianglePoints = new ArrayList<ImmutablePoint>((this.num - 2) * 3); // any polygon
@@ -120,16 +82,7 @@ class EarClippingTriangulation {
 	 *            number of the polygon vertex at which the ear is clipped
 	 */
 	private void clipEarAtPosition(int p) {
-		// System.out.println("clipping ear at position: " + p + " number of polygon vertices: "
-		// + num);
-
-		if (p == -1) {
-			for (int x = 0; x < this.num; x++) {
-				// Logger.d(xCoords[x] + " " + yCoords[x]);
-				// if (((x + 1) % 2) == 0)
-				// Logger.d("");
-			}
-		}
+		// Logger.d("clipping ear at position: " + p + " number of polygon vertices: " + num);
 
 		/*
 		 * add the new triangle to the list
@@ -200,7 +153,7 @@ class EarClippingTriangulation {
 	 * @return true if there is an ear at vertex p
 	 */
 	private boolean earAtPoint(int p) {
-		// System.out.println("check for ear at point " + p);
+		// Logger.d("check for ear at point " + p);
 		if (p == 0) {
 			return isEar(this.xCoords[this.num - 1], this.yCoords[this.num - 1],
 					this.xCoords[0], this.yCoords[0], this.xCoords[1], this.yCoords[1]);
@@ -285,8 +238,8 @@ class EarClippingTriangulation {
 	private boolean isEar(float x1, float y1, float x2, float y2, float x3, float y3) {
 		// make sure the triangle is convex
 		if (!isConvex(x1, y1, x2, y2, x3, y3)) {
-			// System.out.println("not convex at " + x1 + "," + y1 + " " + x2 + "," + y2 + " "
-			// + x3 + "," + y3);
+			// Logger.d("not convex at " + x1 + "," + y1 + " " + x2 + "," + y2 + " " + x3 + ","
+			// + y3);
 			return false;
 		}
 

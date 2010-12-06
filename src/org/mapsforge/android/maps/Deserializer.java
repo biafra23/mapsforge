@@ -19,7 +19,7 @@ package org.mapsforge.android.maps;
 /**
  * This static class converts byte arrays to numbers. Byte order is big-endian.
  */
-class Deserializer {
+final class Deserializer {
 	/**
 	 * Converts five bytes of a byte array to a long number.
 	 * 
@@ -97,5 +97,12 @@ class Deserializer {
 	 */
 	static short toShort(byte[] buffer, int offset) {
 		return (short) (buffer[offset] << 8 | (buffer[offset + 1] & 0xff));
+	}
+
+	/**
+	 * Empty private constructor to prevent object creation.
+	 */
+	private Deserializer() {
+		// do nothing
 	}
 }

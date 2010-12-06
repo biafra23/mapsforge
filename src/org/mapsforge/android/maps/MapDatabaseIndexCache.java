@@ -28,7 +28,7 @@ class MapDatabaseIndexCache {
 	/**
 	 * Bitmask to extract the block address from an index entry.
 	 */
-	private static final long BITMASK_INDEX_ADDRESS = 0x7FFFFFFFFFFFFFFFl;
+	private static final long BITMASK_INDEX_ADDRESS = 0x7FFFFFFFFFFFFFFFL;
 
 	/**
 	 * Number of bytes a single index entry consists of.

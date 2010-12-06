@@ -19,7 +19,7 @@ package org.mapsforge.android.maps;
 /**
  * Fast implementation of the Cohen–Sutherland clipping algorithm.
  */
-class LineClipping {
+final class LineClipping {
 	private static final int BOTTOM = 1;
 	private static final int LEFT = 2;
 	private static final int RIGHT = 4;
@@ -223,5 +223,12 @@ class LineClipping {
 				outcode2 = calculateOutCode(x2new, y2new, left, bottom, right, top);
 			}
 		}
+	}
+
+	/**
+	 * Empty private constructor to prevent object creation.
+	 */
+	private LineClipping() {
+		// do nothing
 	}
 }

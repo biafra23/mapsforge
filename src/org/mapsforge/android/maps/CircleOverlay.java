@@ -16,6 +16,7 @@
  */
 package org.mapsforge.android.maps;
 
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -101,7 +102,8 @@ public class CircleOverlay extends Overlay {
 	}
 
 	@Override
-	final synchronized void drawOverlayBitmap(Point drawPosition, byte drawZoomLevel) {
+	public final synchronized void drawOverlayBitmap(Canvas canvas, Point drawPosition,
+			Projection projection, byte drawZoomLevel) {
 		if (this.center == null || this.radius < 0) {
 			// no valid parameters to draw the circle
 			return;
@@ -112,7 +114,7 @@ public class CircleOverlay extends Overlay {
 
 		// make sure that the cached center position is valid
 		if (drawZoomLevel != this.cachedZoomLevel) {
-			this.cachedCenterPosition = this.projection.toPoint(this.center,
+			this.cachedCenterPosition = projection.toPoint(this.center,
 					this.cachedCenterPosition, drawZoomLevel);
 			this.cachedZoomLevel = drawZoomLevel;
 		}
@@ -124,15 +126,15 @@ public class CircleOverlay extends Overlay {
 
 		// draw the path on the canvas
 		if (this.fillPaint != null) {
-			this.internalCanvas.drawPath(this.path, this.fillPaint);
+			canvas.drawPath(this.path, this.fillPaint);
 		}
 		if (this.outlinePaint != null) {
-			this.internalCanvas.drawPath(this.path, this.outlinePaint);
+			canvas.drawPath(this.path, this.outlinePaint);
 		}
 	}
 
 	@Override
-	String getThreadName() {
+	public String getThreadName() {
 		return THREAD_NAME;
 	}
 }

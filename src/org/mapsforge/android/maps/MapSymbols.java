@@ -146,44 +146,122 @@ class MapSymbols {
 	}
 
 	void recycle() {
-		this.atm.recycle();
-		this.bakery.recycle();
-		this.bank.recycle();
-		this.bicycle_rental.recycle();
-		this.bus.recycle();
-		this.bus_sta.recycle();
-		this.cafe.recycle();
-		this.church.recycle();
-		this.cinema.recycle();
-		this.fastfood.recycle();
-		this.firebrigade.recycle();
-		this.fountain.recycle();
-		this.helipad.recycle();
-		this.hospital.recycle();
-		this.hostel.recycle();
-		this.hotel.recycle();
-		this.information.recycle();
-		this.library.recycle();
-		this.parking.recycle();
-		this.peak.recycle();
-		this.petrolStation.recycle();
-		this.pharmacy.recycle();
-		this.playground.recycle();
-		this.postbox.recycle();
-		this.postoffice.recycle();
-		this.pub.recycle();
-		this.railway_crossing.recycle();
-		this.recycling.recycle();
-		this.restaurant.recycle();
-		this.school.recycle();
-		this.shelter.recycle();
-		this.supermarket.recycle();
-		this.telephone.recycle();
-		this.theatre.recycle();
-		this.toilets.recycle();
-		this.traffic_signal.recycle();
-		this.university.recycle();
-		this.viewpoint.recycle();
-		this.windmill.recycle();
+		if (this.atm != null) {
+			this.atm.recycle();
+		}
+		if (this.bakery != null) {
+			this.bakery.recycle();
+		}
+		if (this.bank != null) {
+			this.bank.recycle();
+		}
+		if (this.bicycle_rental != null) {
+			this.bicycle_rental.recycle();
+		}
+		if (this.bus != null) {
+			this.bus.recycle();
+		}
+		if (this.bus_sta != null) {
+			this.bus_sta.recycle();
+		}
+		if (this.cafe != null) {
+			this.cafe.recycle();
+		}
+		if (this.church != null) {
+			this.church.recycle();
+		}
+		if (this.cinema != null) {
+			this.cinema.recycle();
+		}
+		if (this.fastfood != null) {
+			this.fastfood.recycle();
+		}
+		if (this.firebrigade != null) {
+			this.firebrigade.recycle();
+		}
+		if (this.fountain != null) {
+			this.fountain.recycle();
+		}
+		if (this.helipad != null) {
+			this.helipad.recycle();
+		}
+		if (this.hospital != null) {
+			this.hospital.recycle();
+		}
+		if (this.hostel != null) {
+			this.hostel.recycle();
+		}
+		if (this.hotel != null) {
+			this.hotel.recycle();
+		}
+		if (this.information != null) {
+			this.information.recycle();
+		}
+		if (this.library != null) {
+			this.library.recycle();
+		}
+		if (this.parking != null) {
+			this.parking.recycle();
+		}
+		if (this.peak != null) {
+			this.peak.recycle();
+		}
+		if (this.petrolStation != null) {
+			this.petrolStation.recycle();
+		}
+		if (this.pharmacy != null) {
+			this.pharmacy.recycle();
+		}
+		if (this.playground != null) {
+			this.playground.recycle();
+		}
+		if (this.postbox != null) {
+			this.postbox.recycle();
+		}
+		if (this.postoffice != null) {
+			this.postoffice.recycle();
+		}
+		if (this.pub != null) {
+			this.pub.recycle();
+		}
+		if (this.railway_crossing != null) {
+			this.railway_crossing.recycle();
+		}
+		if (this.recycling != null) {
+			this.recycling.recycle();
+		}
+		if (this.restaurant != null) {
+			this.restaurant.recycle();
+		}
+		if (this.school != null) {
+			this.school.recycle();
+		}
+		if (this.shelter != null) {
+			this.shelter.recycle();
+		}
+		if (this.supermarket != null) {
+			this.supermarket.recycle();
+		}
+		if (this.telephone != null) {
+			this.telephone.recycle();
+		}
+		if (this.theatre != null) {
+			this.theatre.recycle();
+		}
+		if (this.toilets != null) {
+			this.toilets.recycle();
+		}
+		if (this.traffic_signal != null) {
+			this.traffic_signal.recycle();
+		}
+		if (this.university != null) {
+			this.university.recycle();
+		}
+		if (this.viewpoint != null) {
+			this.viewpoint.recycle();
+		}
+		if (this.windmill != null) {
+			this.windmill.recycle();
+		}
 	}
 }
